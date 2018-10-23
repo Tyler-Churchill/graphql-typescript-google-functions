@@ -1,0 +1,25 @@
+{
+  "dependencies": {
+    "@types/node": "^10.9.2",
+    "bcrypt": "^3.0.2",
+    "cors": "^2.8.4",
+    "csv": "^3.1.0",
+    "csv-parser": "^1.12.1",
+    "fast-csv": "^2.4.1",
+    "lodash.throttle": "^4.1.1",
+    "papaparse": "^4.6.0",
+    "pg": "^7.4.3",
+    "slug": "^0.9.1",
+    "ts-node": "^7.0.1",
+    "tslint": "^5.11.0",
+    "typeorm": "^0.2.7",
+    "typescript": "^3.0.1"
+  },
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "create-migrations": "ts-node node_modules/typeorm/cli.js migration:create -n",
+    "make-migrations": "ts-node node_modules/typeorm/cli.js migration:generate -n",
+    "run-migrations": "ts-node node_modules/typeorm/cli.js migration:run"
+  }
+}
