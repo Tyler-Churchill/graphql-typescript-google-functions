@@ -1,11 +1,8 @@
 import * as bcrypt from 'bcrypt';
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  BaseEntity,
-  BeforeInsert
-} from 'typeorm';
+import { IsEmail, MinLength } from 'class-validator';
+import { BaseEntity } from '../../BaseEntity';
+
+import { Entity, Column, BeforeInsert } from 'typeorm';
 
 export enum USER_STATUS_MAP {
   ACTIVE = 'USER_ACTIVE',
@@ -21,10 +18,8 @@ export enum USER_PERMISSION_MAP {
 
 @Entity('users')
 export class User extends BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
   @Column({ type: 'varchar' })
+  @MinLength(5)
   password: string;
 
   @Column({ nullable: true })
@@ -34,16 +29,21 @@ export class User extends BaseEntity {
   lastName: string;
 
   @Column({ unique: true })
+  @IsEmail()
   email: string;
 
   @Column({ type: 'varchar', default: USER_STATUS_MAP.ACTIVE })
   status: USER_STATUS_MAP;
 
-  @Column({ type: 'enum', enum: USER_PERMISSION_MAP, array: true })
+  @Column({
+    type: 'enum',
+    enum: USER_PERMISSION_MAP,
+    array: true
+  })
   permissions: USER_PERMISSION_MAP[];
 
   @BeforeInsert()
   async hashPasswordBeforeInsert() {
-    this.password = await bcrypt.hash(this.password, 10);
+    this.password = await bcrypt.hash(this.password, 11);
   }
 }

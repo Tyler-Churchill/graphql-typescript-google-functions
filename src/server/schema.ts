@@ -5,9 +5,11 @@ import schemaDirectives from './schemaDirectives';
 import { UserSchema } from '../modules/user/index';
 import { MainSchema } from '../modules/main/index';
 
+/**
+ * Generate our GraphQL schema
+ */
 const schema = makeExecutableSchema({
   typeDefs: [MainSchema, UserSchema],
-  // performs field lookups for a specific type
   resolvers,
   schemaDirectives
 });

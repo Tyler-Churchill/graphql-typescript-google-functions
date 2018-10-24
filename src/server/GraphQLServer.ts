@@ -1,5 +1,10 @@
 import 'reflect-metadata';
-import { ApolloServer, gql } from 'apollo-server-express';
+import {
+  ApolloServer,
+  gql,
+  UserInputError,
+  ApolloError
+} from 'apollo-server-express';
 import * as express from 'express';
 import * as cors from 'cors';
 import schema from './schema';
@@ -7,9 +12,7 @@ import { createConnection, Connection } from 'typeorm';
 import { User } from '../../packages/common/src/users/entity/User';
 import * as jwt from 'jsonwebtoken';
 import { refreshTokens } from '../modules/user/auth';
-
-export const SECRET = 'awdawdawdaw';
-export const SECRET2 = 'awdawdaghrehr'; // TODO move to env file
+import Config from '../../config';
 
 /**
  * Loose entity object for dynamically setting
@@ -37,7 +40,7 @@ class GraphQLServer {
       port: 5432,
       username: 'postgres',
       password: 'postgres',
-      database: 'main',
+      database: 'test-db',
       synchronize: false,
       logging: false,
       entities: [User]
@@ -55,6 +58,13 @@ class GraphQLServer {
       introspection: true,
       cacheControl: true,
       tracing: true,
+      formatError: error => {
+        if (error.extensions.code === 'BAD_USER_INPUT') {
+          const errors = error.extensions.exception.errors;
+          return new UserInputError('Invalid input', { errors });
+        }
+        return new ApolloError('Unkown error occured');
+      },
       context: ({ req }) => ({
         db: this.connection,
         entities: this.entities,
@@ -68,16 +78,14 @@ class GraphQLServer {
     const token = req.headers['x-token'];
     if (token) {
       try {
-        const jsonObj: string | object = jwt.verify(token, SECRET);
+        const jsonObj: string | object = jwt.verify(token, Config.tokenSecret);
         req.userId = jsonObj['id'];
       } catch (err) {
         const refreshToken = req.headers['x-refresh-token'];
         const newTokens = await refreshTokens(
           token,
           refreshToken,
-          this && this.entities,
-          SECRET,
-          SECRET2
+          this && this.entities
         );
         if (newTokens.token && newTokens.refreshToken) {
           res.set('Access-Control-Expose-Headers', 'x-token, x-refresh-token');

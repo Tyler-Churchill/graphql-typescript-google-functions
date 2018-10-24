@@ -1,7 +1,8 @@
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
+import Config from '../../../config';
 
-export const createTokens = async (user, secret, secret2) => {
+export const createTokens = async (user, secret, refreshSecret) => {
   const token = jwt.sign(
     {
       id: user.id
@@ -16,22 +17,15 @@ export const createTokens = async (user, secret, secret2) => {
     {
       id: user.id
     },
-    secret2,
+    refreshSecret,
     {
       expiresIn: '7d'
     }
   );
   return [token, refreshToken];
 };
-
-export const refreshTokens = async (
-  token,
-  refreshToken,
-  entities,
-  secret,
-  secret2
-) => {
-  let userId = 0;
+export const refreshTokens = async (token, refreshToken, entities) => {
+  let userId;
   try {
     const json = jwt.decode(refreshToken);
     if (json) {
@@ -47,13 +41,10 @@ export const refreshTokens = async (
     where: { id: userId },
     raw: true
   });
-
   if (!user) {
     return {};
   }
-
-  const refreshSecret = user.password + secret2;
-
+  const refreshSecret = user.password + Config.refreshTokenSecret;
   try {
     jwt.verify(refreshToken, refreshSecret);
   } catch (err) {
@@ -61,7 +52,7 @@ export const refreshTokens = async (
   }
   const [newToken, newRefreshToken] = await createTokens(
     user,
-    secret,
+    Config.tokenSecret,
     refreshSecret
   );
   return {
@@ -71,8 +62,7 @@ export const refreshTokens = async (
   };
 };
 
-export const tryLogin = async (email, password, entities, SECRET, SECRET2) => {
-  console.log(email);
+export const tryLogin = async (email, password, entities) => {
   const user = await entities.User.findOne({ where: { email }, raw: true });
   if (!user) {
     // user with provided email not found
@@ -81,7 +71,6 @@ export const tryLogin = async (email, password, entities, SECRET, SECRET2) => {
       errors: [{ path: 'email', message: 'Wrong email' }]
     };
   }
-  console.log(user);
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) {
@@ -91,16 +80,12 @@ export const tryLogin = async (email, password, entities, SECRET, SECRET2) => {
       errors: [{ path: 'password', message: 'Wrong password' }]
     };
   }
-
-  const refreshTokenSecret = user.password + SECRET2;
-
+  const refreshTokenSecret = user.password + Config.refreshTokenSecret;
   const [token, refreshToken] = await createTokens(
     user,
-    SECRET,
+    Config.tokenSecret,
     refreshTokenSecret
   );
-  console.log(token);
-
   return {
     ok: true,
     errors: null,

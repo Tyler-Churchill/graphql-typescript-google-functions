@@ -1,7 +1,7 @@
 import { gql } from 'apollo-server-express';
 import { IResolvers } from 'graphql-tools';
 import { tryLogin } from './auth';
-import { SECRET, SECRET2 } from '../../server/GraphQLServer';
+import { UserInputError } from 'apollo-server-core';
 import {
   User,
   USER_PERMISSION_MAP
@@ -44,8 +44,16 @@ export const resolvers: IResolvers = {
       newUser.email = email;
       newUser.password = password;
       newUser.permissions = [USER_PERMISSION_MAP.PUBLIC];
+
+      const errors = await newUser.validate();
+      if (errors.length) {
+        return {
+          ok: false,
+          errors: errors[0].constraints.isEmail
+        };
+      }
       try {
-        const user = await context.entities.User.save(newUser);
+        await context.entities.User.save(newUser);
         return {
           ok: true,
           errors: null
@@ -58,6 +66,6 @@ export const resolvers: IResolvers = {
       }
     },
     login: async (parent, { email, password }, context) =>
-      tryLogin(email, password, context.entities, SECRET, SECRET2)
+      tryLogin(email, password, context.entities)
   }
 };

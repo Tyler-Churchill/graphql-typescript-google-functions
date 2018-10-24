@@ -1,6 +1,7 @@
 import { SchemaDirectiveVisitor } from 'graphql-tools';
 import { defaultFieldResolver } from 'graphql';
 import { USER_PERMISSION_MAP } from '../../../packages/common/src/users/entity/User';
+import { AuthenticationError } from 'apollo-server-core';
 
 export default class AuthDirective extends SchemaDirectiveVisitor {
   visitObject(type) {
@@ -28,8 +29,8 @@ export default class AuthDirective extends SchemaDirectiveVisitor {
       const field = fields[fieldName];
       const { resolve = defaultFieldResolver } = field;
       field.resolve = async function(...args) {
-        // Get the required Role from the field first, falling back
-        // to the objectType if no Role is required by the field:
+        // Get the required Roles from the field first, falling back
+        // to the objectType if no Roles is required by the field:
         const requiredRoles =
           field._requiredAuthRole || objectType._requiredAuthRole;
 
@@ -47,12 +48,13 @@ export default class AuthDirective extends SchemaDirectiveVisitor {
           );
           if (
             // check if user has the required roles
+            // TODO with higher volume traffic, cache users + roles in redis/memory
             user.permissions.every(perm => requiredRoleIds.includes(perm))
           ) {
             return resolve.apply(this, args);
           }
         }
-        throw new Error('Not authorized');
+        throw new AuthenticationError('Not authorized');
       };
     });
   }

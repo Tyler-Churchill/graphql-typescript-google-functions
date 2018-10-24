@@ -1,9 +1,12 @@
-import { CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { PrimaryGeneratedColumn } from 'typeorm';
+import { validate } from 'class-validator';
 
 export abstract class BaseEntity {
-  @CreateDateColumn()
-  createdAt: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @UpdateDateColumn()
-  updatedAt: string;
+  async validate() {
+    // call on entitiy instance to return errors or [] if validation passes
+    return validate(this);
+  }
 }
